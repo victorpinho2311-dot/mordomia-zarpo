@@ -1,11 +1,11 @@
 // ── DatePicker ────────────────────────────────────────────────
 class DatePicker {
   constructor(wrap) {
-    this.wrap = wrap;
-    this.input = wrap.querySelector('.dp-input');
+    this.wrap   = wrap;
+    this.input  = wrap.querySelector('.dp-input');
     this.hidden = wrap.querySelector('.dp-hidden');
-    this.btn   = wrap.querySelector('.dp-btn');
-    this.popup = null;
+    this.btn    = wrap.querySelector('.dp-btn');
+    this.popup  = null;
     this.curMonth = new Date().getMonth();
     this.curYear  = new Date().getFullYear();
     if (this.hidden.value) this._syncDisplay();
@@ -13,7 +13,7 @@ class DatePicker {
   }
 
   _bind() {
-    this.input.addEventListener('input', () => this._onInput());
+    this.input.addEventListener('input',   () => this._onInput());
     this.input.addEventListener('keydown', (e) => this._onKey(e));
     this.btn.addEventListener('mousedown', (e) => { e.preventDefault(); this._toggle(); });
     document.addEventListener('mousedown', (e) => {
@@ -22,20 +22,33 @@ class DatePicker {
   }
 
   _onInput() {
-    const prev = this.input.value;
-    let d = prev.replace(/\D/g, '').substring(0, 8);
+    let d = this.input.value.replace(/\D/g, '').substring(0, 8);
 
-    // Clamp day and month
-    if (d.length >= 2 && parseInt(d.substring(0,2)) > 31) d = '31' + d.substring(2);
-    if (d.length >= 4 && parseInt(d.substring(2,4)) > 12) d = d.substring(0,2) + '12' + d.substring(4);
+    // Clamp day and month while typing
+    if (d.length >= 2) {
+      const day = parseInt(d.substring(0, 2));
+      if (day < 1 && d.length >= 2) d = '01' + d.substring(2);
+      if (day > 31) d = '31' + d.substring(2);
+    }
+    if (d.length >= 4) {
+      const mo = parseInt(d.substring(2, 4));
+      if (mo < 1 && d.length >= 4) d = d.substring(0, 2) + '01' + d.substring(4);
+      if (mo > 12) d = d.substring(0, 2) + '12' + d.substring(4);
+    }
 
     let fmt = d.substring(0, 2);
     if (d.length > 2) fmt += '/' + d.substring(2, 4);
     if (d.length > 4) fmt += '/' + d.substring(4, 8);
+
     this.input.value = fmt;
 
+    // Safari: after programmatic value set the cursor jumps to position 0.
+    // Force it to the end synchronously, then again via rAF for Safari's
+    // deferred selection update.
+    this._setCursor(fmt.length);
+
     if (d.length === 8) {
-      const dd = d.substring(0,2), mm = d.substring(2,4), yyyy = d.substring(4,8);
+      const dd = d.substring(0, 2), mm = d.substring(2, 4), yyyy = d.substring(4, 8);
       const valid = parseInt(dd) >= 1 && parseInt(mm) >= 1 && parseInt(yyyy) >= 1900;
       this.hidden.value = valid ? `${yyyy}-${mm}-${dd}` : '';
       if (valid) { this.curMonth = parseInt(mm) - 1; this.curYear = parseInt(yyyy); }
@@ -45,15 +58,26 @@ class DatePicker {
   }
 
   _onKey(e) {
-    if (['ArrowLeft','ArrowRight','Tab','Backspace','Delete','Home','End'].includes(e.key)) return;
+    // Let navigation and editing keys through unchanged
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+         'Tab', 'Backspace', 'Delete', 'Home', 'End'].includes(e.key)) return;
     if (e.ctrlKey || e.metaKey) return;
+    // Block anything that isn't a digit
     if (!/^\d$/.test(e.key)) e.preventDefault();
+  }
+
+  // Set cursor position and re-apply after rAF (Safari needs the deferred call)
+  _setCursor(pos) {
+    try { this.input.setSelectionRange(pos, pos); } catch (_) {}
+    requestAnimationFrame(() => {
+      try { this.input.setSelectionRange(pos, pos); } catch (_) {}
+    });
   }
 
   _syncDisplay() {
     const v = this.hidden.value;
     if (!v) { this.input.value = ''; return; }
-    const p = v.substring(0,10).split('-');
+    const p = v.substring(0, 10).split('-');
     if (p.length === 3) {
       this.input.value = `${p[2]}/${p[1]}/${p[0]}`;
       this.curMonth = parseInt(p[1]) - 1;
@@ -64,7 +88,7 @@ class DatePicker {
   getValue() { return this.hidden.value; }
 
   setValue(iso) {
-    this.hidden.value = iso ? iso.substring(0,10) : '';
+    this.hidden.value = iso ? iso.substring(0, 10) : '';
     this._syncDisplay();
   }
 
@@ -84,11 +108,12 @@ class DatePicker {
   _close() { if (this.popup) { this.popup.remove(); this.popup = null; } }
 
   _render() {
-    const MN = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const MN = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                 'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     const DL = ['D','S','T','Q','Q','S','S'];
     const fdow = new Date(this.curYear, this.curMonth, 1).getDay();
     const dim  = new Date(this.curYear, this.curMonth + 1, 0).getDate();
-    const today = new Date().toISOString().substring(0,10);
+    const today = new Date().toISOString().substring(0, 10);
     const sel   = this.hidden.value;
 
     let html = `<div class="dp-header">
@@ -96,11 +121,11 @@ class DatePicker {
       <span>${MN[this.curMonth]} ${this.curYear}</span>
       <button class="dp-nav-btn" data-dir="1">›</button>
     </div><div class="dp-cal">
-      ${DL.map(d=>`<div class="dp-dow">${d}</div>`).join('')}
+      ${DL.map(d => `<div class="dp-dow">${d}</div>`).join('')}
       ${'<div class="dp-day dp-empty"></div>'.repeat(fdow)}`;
 
     for (let d = 1; d <= dim; d++) {
-      const ds = `${this.curYear}-${String(this.curMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const ds = `${this.curYear}-${String(this.curMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       let cls = 'dp-day';
       if (ds === today) cls += ' dp-today';
       if (ds === sel)   cls += ' dp-sel';
@@ -138,27 +163,41 @@ class TimeMask {
   }
 
   _bind() {
-    this.input.addEventListener('input', () => this._onInput());
+    this.input.addEventListener('input',   () => this._onInput());
     this.input.addEventListener('keydown', (e) => this._onKey(e));
   }
 
   _onInput() {
     let d = this.input.value.replace(/\D/g, '').substring(0, 4);
+
     let hh = d.substring(0, 2);
     if (hh.length === 2 && parseInt(hh) > 23) hh = '23';
+
     let fmt = hh;
     if (d.length > 2) {
       let mm = d.substring(2, 4);
       if (mm.length === 2 && parseInt(mm) > 59) mm = '59';
       fmt += ':' + mm;
     }
+
     this.input.value = fmt;
+
+    // Safari: same cursor fix as DatePicker
+    this._setCursor(fmt.length);
   }
 
   _onKey(e) {
-    if (['ArrowLeft','ArrowRight','Tab','Backspace','Delete'].includes(e.key)) return;
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+         'Tab', 'Backspace', 'Delete'].includes(e.key)) return;
     if (e.ctrlKey || e.metaKey) return;
     if (!/^\d$/.test(e.key)) e.preventDefault();
+  }
+
+  _setCursor(pos) {
+    try { this.input.setSelectionRange(pos, pos); } catch (_) {}
+    requestAnimationFrame(() => {
+      try { this.input.setSelectionRange(pos, pos); } catch (_) {}
+    });
   }
 
   getValue() { return this.input.value; }
@@ -195,7 +234,6 @@ function tmSet(id, v) {
   if (el && el._tm) el._tm.setValue(v);
 }
 
-// HTML builder helpers
 function dpHtml(id, opts) {
   opts = opts || {};
   return `<div class="dp-wrap" id="${id}">
