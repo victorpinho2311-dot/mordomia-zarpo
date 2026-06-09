@@ -57,12 +57,34 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="data_inicio">Data e hora início <span class="req">*</span></label>
-            <input class="form-control" type="datetime-local" id="data_inicio" name="data_inicio">
+            <label class="form-label">Data início <span class="req">*</span></label>
+            <div class="dp-wrap" id="req-di">
+              <input type="text" class="form-control dp-input" placeholder="DD/MM/AAAA" maxlength="10" autocomplete="off">
+              <input type="hidden" class="dp-hidden">
+              <button type="button" class="dp-btn" tabindex="-1">📅</button>
+            </div>
           </div>
           <div class="form-group">
-            <label class="form-label" for="data_fim">Data e hora fim <span class="req">*</span></label>
-            <input class="form-control" type="datetime-local" id="data_fim" name="data_fim">
+            <label class="form-label">Hora início <span class="req">*</span></label>
+            <div class="tm-wrap" id="req-hi">
+              <input type="text" class="form-control tm-input" placeholder="HH:MM" maxlength="5" autocomplete="off">
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Data fim <span class="req">*</span></label>
+            <div class="dp-wrap" id="req-df">
+              <input type="text" class="form-control dp-input" placeholder="DD/MM/AAAA" maxlength="10" autocomplete="off">
+              <input type="hidden" class="dp-hidden">
+              <button type="button" class="dp-btn" tabindex="-1">📅</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Hora fim <span class="req">*</span></label>
+            <div class="tm-wrap" id="req-hf">
+              <input type="text" class="form-control tm-input" placeholder="HH:MM" maxlength="5" autocomplete="off">
+            </div>
           </div>
         </div>
 
@@ -87,9 +109,10 @@
   </div>
 </div>
 
-<script src="js/config.js?v=3"></script>
-<script src="js/api.js?v=3"></script>
-<script src="js/request.js?v=3"></script>
+<script src="js/config.js?v=4"></script>
+<script src="js/api.js?v=4"></script>
+<script src="js/datepicker.js?v=4"></script>
+<script src="js/request.js?v=4"></script>
 <script>
   document.getElementById('tipo_solicitacao').addEventListener('change', function() {
     document.getElementById('ferias-hint').style.display = this.value === 'Férias' ? 'block' : 'none';

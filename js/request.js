@@ -5,7 +5,8 @@ const MOTIVOS = [
 ];
 
 async function initRequest() {
-  // Load employees for the dropdown
+  initPickers(document);
+
   try {
     const res = await API.getFuncionarios();
     if (res.success && res.data.length) {
@@ -22,14 +23,12 @@ async function initRequest() {
     console.warn('Could not load employees:', e);
   }
 
-  // Populate motivo dropdown
   const motivoSel = document.getElementById('motivo');
   motivoSel.innerHTML = '<option value="">Selecione o motivo...</option>' +
     MOTIVOS.map(m => `<option value="${m}">${m}</option>`).join('');
 
   motivoSel.addEventListener('change', () => {
-    const outrosWrap = document.getElementById('outros-wrap');
-    outrosWrap.style.display = motivoSel.value === 'Outros' ? 'block' : 'none';
+    document.getElementById('outros-wrap').style.display = motivoSel.value === 'Outros' ? 'block' : 'none';
   });
 
   document.getElementById('request-form').addEventListener('submit', handleSubmit);
@@ -45,8 +44,12 @@ async function handleSubmit(e) {
   const tipo     = document.getElementById('tipo_solicitacao').value;
   const motivo   = document.getElementById('motivo').value;
   const outroTxt = document.getElementById('motivo_outro').value.trim();
-  const inicio   = document.getElementById('data_inicio').value;
-  const fim      = document.getElementById('data_fim').value;
+  const diDate   = dpGet('req-di');
+  const diTime   = tmGet('req-hi');
+  const dfDate   = dpGet('req-df');
+  const dfTime   = tmGet('req-hf');
+  const inicio   = diDate && diTime ? `${diDate}T${diTime}` : '';
+  const fim      = dfDate && dfTime ? `${dfDate}T${dfTime}` : '';
 
   if (!nome || !email || !tipo || !motivo || !inicio || !fim) {
     showAlert(alert, 'error', 'Por favor, preencha todos os campos obrigatórios.');
