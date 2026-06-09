@@ -37,6 +37,34 @@ function isFeriado(dateStr, feriados) {
   return feriados.some(f => String(f.data).substring(0, 10) === dateStr);
 }
 
+// Returns set of funcionario ids/nomes that work in reduced schedule on a given weekday.
+// Rule: Saturday escala → Mon-Fri of same week are reduced.
+//       Sunday  escala → Mon-Fri of the following week are reduced.
+function getReducedSet(dateStr, escala_fds) {
+  const date = new Date(dateStr + 'T12:00:00');
+  const dow  = date.getDay();
+  if (dow === 0 || dow === 6) return new Set();   // only applies to weekdays
+  const reduced = new Set();
+  const monday  = new Date(date);
+  monday.setDate(date.getDate() - (dow - 1));      // rewind to Monday
+  const sat = new Date(monday); sat.setDate(monday.getDate() + 5);  // Sat of same week
+  const sun = new Date(monday); sun.setDate(monday.getDate() - 1);  // Sun before this Monday
+  const satStr = toDateStr(sat);
+  const sunStr = toDateStr(sun);
+  escala_fds.forEach(e => {
+    const d = String(e.data).substring(0, 10);
+    if (d === satStr || d === sunStr) {
+      if (e.funcionario_id)   reduced.add(e.funcionario_id);
+      if (e.funcionario_nome) reduced.add(e.funcionario_nome);
+    }
+  });
+  return reduced;
+}
+
+// Fixed shift times for weekend days (same for every employee)
+const SAT_START = '09:00', SAT_END = '18:00';
+const SUN_START = '10:00', SUN_END = '19:00';
+
 // ── Month View ──────────────────────────────────────────────
 function renderMonth(container, calData, viewMode) {
   const { funcionarios, escala_fds, feriados, eventos, ausencias, mes, ano } = calData;
@@ -218,9 +246,18 @@ function renderWeek(container, calData, viewMode, weekOffset) {
     });
 
     // Worker blocks
+    const reducedSet = isSpecial ? new Set() : getReducedSet(dateStr, escala_fds);
     workers.forEach((f, idx) => {
-      const startStr = f.reduced ? (f.horario_reduzido_inicio || f.horario_normal_inicio) : f.horario_normal_inicio;
-      const endStr   = f.reduced ? (f.horario_reduzido_fim   || f.horario_normal_fim)   : f.horario_normal_fim;
+      let startStr, endStr;
+      if (isSpecial) {
+        if      (dow === 0) { startStr = SUN_START; endStr = SUN_END; }   // Sunday: fixed 10-19
+        else if (dow === 6) { startStr = SAT_START; endStr = SAT_END; }   // Saturday: fixed 09-18
+        else { startStr = f.horario_reduzido_inicio || f.horario_normal_inicio; endStr = f.horario_reduzido_fim || f.horario_normal_fim; } // Feriado weekday
+      } else {
+        const red = reducedSet.has(f.id) || reducedSet.has(f.nome);
+        startStr = red ? (f.horario_reduzido_inicio || f.horario_normal_inicio) : f.horario_normal_inicio;
+        endStr   = red ? (f.horario_reduzido_fim   || f.horario_normal_fim)   : f.horario_normal_fim;
+      }
       const startMin = timeToMinutes(startStr);
       const endMin   = timeToMinutes(endStr);
       if (startMin === null || endMin === null) return;
@@ -311,9 +348,18 @@ function renderDay(container, calData, viewMode, dayOffset) {
 
   hours.forEach((_, i) => { html += `<div class="week-slot-line" style="top:${i * HOUR_PX}px"></div>`; });
 
+  const reducedSetDay = isSpecial ? new Set() : getReducedSet(dateStr, escala_fds);
   workers.forEach((f, idx) => {
-    const startStr = f.reduced ? (f.horario_reduzido_inicio || f.horario_normal_inicio) : f.horario_normal_inicio;
-    const endStr   = f.reduced ? (f.horario_reduzido_fim   || f.horario_normal_fim)   : f.horario_normal_fim;
+    let startStr, endStr;
+    if (isSpecial) {
+      if      (dow === 0) { startStr = SUN_START; endStr = SUN_END; }
+      else if (dow === 6) { startStr = SAT_START; endStr = SAT_END; }
+      else { startStr = f.horario_reduzido_inicio || f.horario_normal_inicio; endStr = f.horario_reduzido_fim || f.horario_normal_fim; }
+    } else {
+      const red = reducedSetDay.has(f.id) || reducedSetDay.has(f.nome);
+      startStr = red ? (f.horario_reduzido_inicio || f.horario_normal_inicio) : f.horario_normal_inicio;
+      endStr   = red ? (f.horario_reduzido_fim   || f.horario_normal_fim)   : f.horario_normal_fim;
+    }
     const startMin = timeToMinutes(startStr);
     const endMin   = timeToMinutes(endStr);
     if (startMin === null || endMin === null) return;
