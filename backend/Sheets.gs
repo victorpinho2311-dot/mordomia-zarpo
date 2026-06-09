@@ -24,6 +24,9 @@ function initSheets() {
   return { success: true, message: 'Planilhas inicializadas com sucesso.' };
 }
 
+// Time columns that should be returned as "HH:mm" strings
+const TIME_COLS = ['horario_normal_inicio','horario_normal_fim','horario_reduzido_inicio','horario_reduzido_fim'];
+
 function sheetToObjects(sheet) {
   const data = sheet.getDataRange().getValues();
   if (data.length <= 1) return [];
@@ -34,7 +37,12 @@ function sheetToObjects(sheet) {
     headers.forEach((h, i) => {
       let val = row[i];
       if (val instanceof Date) {
-        val = Utilities.formatDate(val, tz, "yyyy-MM-dd");
+        if (TIME_COLS.includes(h)) {
+          // Format as HH:mm for time fields
+          val = Utilities.formatDate(val, tz, "HH:mm");
+        } else {
+          val = Utilities.formatDate(val, tz, "yyyy-MM-dd");
+        }
       }
       obj[h] = val;
     });
