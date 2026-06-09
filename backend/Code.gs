@@ -2,24 +2,29 @@ function doGet(e) {
   try {
     const p = e.parameter || {};
     const action = p.action;
+    const callback = p.callback; // JSONP support
 
     if (action === 'approve' || action === 'reject') {
       return handleEmailAction(action, p.token);
     }
-    if (action === 'setup') {
-      return jsonResponse(initSheets());
-    }
-    if (action === 'setupAdmin') {
-      return jsonResponse(setupAdmin(p));
-    }
-    if (action === 'getCalendarData') return jsonResponse(getCalendarData(p));
-    if (action === 'getFuncionarios')  return jsonResponse(getFuncionarios());
-    if (action === 'getEventos')       return jsonResponse(getEventos(p));
-    if (action === 'getEscalaFDS')     return jsonResponse(getEscalaFDS(p));
-    if (action === 'getFeriados')      return jsonResponse(getFeriados());
-    if (action === 'getAusencias')     return jsonResponse(getAllAusencias());
 
-    return jsonResponse({ error: 'Ação não encontrada.' });
+    let result;
+    if (action === 'setup')           result = initSheets();
+    else if (action === 'setupAdmin') result = setupAdmin(p);
+    else if (action === 'getCalendarData') result = getCalendarData(p);
+    else if (action === 'getFuncionarios')  result = getFuncionarios();
+    else if (action === 'getEventos')       result = getEventos(p);
+    else if (action === 'getEscalaFDS')     result = getEscalaFDS(p);
+    else if (action === 'getFeriados')      result = getFeriados();
+    else if (action === 'getAusencias')     result = getAllAusencias();
+    else result = { error: 'Ação não encontrada.' };
+
+    if (callback) {
+      return ContentService
+        .createTextOutput(`${callback}(${JSON.stringify(result)})`)
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+    return jsonResponse(result);
   } catch (err) {
     return jsonResponse({ error: err.message, stack: err.stack });
   }
