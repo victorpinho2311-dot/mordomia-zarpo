@@ -82,7 +82,7 @@ async function loadFuncionarios() {
         <div class="form-group"><label class="form-label">Canal <span class="req">*</span></label>
           <select class="form-control" id="func-canal">
             <option value="">Selecione...</option>
-            <option>Chat</option><option>Telefone/pós</option><option>Telefone/pré</option>
+            <option>Chat</option><option>Telefone/pós</option><option>Telefone/pré</option><option>Gestão</option>
           </select></div>
         <div class="form-group"><label class="form-label">Frente</label>
           <input class="form-control" id="func-frente" placeholder="Ex: Vendas"></div>
@@ -425,7 +425,12 @@ function fmtBR(s) {
 }
 
 function chipCls(canal) {
-  return {'Chat':'chip chip-chat','Telefone/pós':'chip chip-pos','Telefone/pré':'chip chip-pre'}[canal] || 'chip chip-ausencia';
+  return {
+    'Chat': 'chip chip-chat',
+    'Telefone/pós': 'chip chip-pos',
+    'Telefone/pré': 'chip chip-pre',
+    'Gestão': 'chip chip-gestao'
+  }[canal] || 'chip chip-ausencia';
 }
 
 document.addEventListener('click', e => {

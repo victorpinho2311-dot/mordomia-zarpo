@@ -23,6 +23,8 @@
   --ausencia-bg: #F3F4F6;
   --evento: #3B82F6;
   --evento-bg: #DBEAFE;
+  --gestao: #7C3AED;
+  --gestao-bg: #EDE9FE;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -134,6 +136,7 @@ body {
 .chip-ausencia { background: var(--ausencia-bg); color: #4B5563; }
 .chip-evento   { background: var(--evento-bg);   color: #1E40AF; }
 .chip-feriado  { background: #FEF3C7;            color: #92400E; }
+.chip-gestao   { background: var(--gestao-bg);  color: #5B21B6; }
 .more-chips    { font-size: 11px; color: var(--light); padding: 1px 7px; }
 
 /* Week view */

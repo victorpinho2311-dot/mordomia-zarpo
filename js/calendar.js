@@ -6,6 +6,7 @@ const CANAL_CLASS = {
   'Telefone/pós': 'pos',
   'Telefone/pre': 'pre',
   'Telefone/pré': 'pre',
+  'Gestão': 'gestao',
 };
 
 function getChipClass(canal) {
@@ -83,19 +84,22 @@ function renderMonth(container, calData, viewMode) {
           chips.push(`<div class="${getChipClass(canal)}" title="${e.funcionario_nome} (${e.tipo})">${e.funcionario_nome}</div>`);
         });
       }
-      // Absences always shown
+      // Absences: gestão employees shown in purple
       dayAusencias.forEach(a => {
+        const func = funcionarios.find(f => f.nome === a.nome);
+        const acls = (func && func.canal === 'Gestão') ? 'chip-gestao' : 'chip-ausencia';
         const label = a.data_inicio === a.data_fim || String(a.data_inicio).substring(0, 10) === String(a.data_fim).substring(0, 10)
           ? a.nome
           : `${a.nome} (${a.tipo_solicitacao})`;
-        chips.push(`<div class="chip chip-ausencia" title="${a.nome} — ${a.tipo_solicitacao}">${label}</div>`);
+        chips.push(`<div class="chip ${acls}" title="${a.nome} — ${a.tipo_solicitacao}">${label}</div>`);
       });
     }
 
     if (viewMode === 'canais' || viewMode === 'ambos') {
       if (!isSpecial) {
         const groups = {};
-        funcionarios.filter(f => !absentNames.includes(f.nome)).forEach(f => {
+        // Gestão canal excluded from Canais view (não fazem atendimento)
+        funcionarios.filter(f => !absentNames.includes(f.nome) && f.canal !== 'Gestão').forEach(f => {
           if (!groups[f.canal]) groups[f.canal] = [];
           groups[f.canal].push(f.nome);
         });
@@ -105,10 +109,12 @@ function renderMonth(container, calData, viewMode) {
       }
     }
 
-    // Events
-    dayEventos.forEach(ev => {
-      chips.push(`<div class="chip chip-evento" title="${ev.nome}">${ev.nome}</div>`);
-    });
+    // Events: hidden in Canais view
+    if (viewMode !== 'canais') {
+      dayEventos.forEach(ev => {
+        chips.push(`<div class="chip chip-evento" title="${ev.nome}">${ev.nome}</div>`);
+      });
+    }
 
     // Holiday label
     if (isFer) {
@@ -190,7 +196,8 @@ function renderWeek(container, calData, viewMode, weekOffset) {
 
     let workers = [];
     if (!isSpecial) {
-      workers = funcionarios.filter(f => !absentNames.includes(f.nome));
+      const base = funcionarios.filter(f => !absentNames.includes(f.nome));
+      workers = viewMode === 'canais' ? base.filter(f => f.canal !== 'Gestão') : base;
     } else {
       dayEscala.forEach(e => {
         const f = funcionarios.find(fn => fn.id === e.funcionario_id || fn.nome === e.funcionario_nome);
@@ -232,19 +239,23 @@ function renderWeek(container, calData, viewMode, weekOffset) {
       </div>`;
     });
 
-    // Absence markers
+    // Absence markers — gestão in purple
     dayAusencias.forEach(a => {
-      html += `<div class="week-event chip-ausencia" style="top:0;height:100%;opacity:.4;border-radius:0" title="${a.nome} — ${a.tipo_solicitacao}"></div>`;
+      const func = funcionarios.find(f => f.nome === a.nome);
+      const acls = (func && func.canal === 'Gestão') ? 'chip-gestao' : 'chip-ausencia';
+      html += `<div class="week-event ${acls}" style="top:0;height:100%;opacity:.4;border-radius:0" title="${a.nome} — ${a.tipo_solicitacao}"></div>`;
     });
 
-    // Events
-    dayEventos.forEach(ev => {
-      const startMin = timeToMinutes(ev.hora_inicio) || WEEK_START_H * 60;
-      const endMin   = timeToMinutes(ev.hora_fim)   || (WEEK_START_H + 1) * 60;
-      const top      = (startMin - WEEK_START_H * 60) * (HOUR_PX / 60);
-      const height   = Math.max((endMin - startMin) * (HOUR_PX / 60), 24);
-      html += `<div class="week-event chip-evento" style="top:${top}px;height:${height}px" title="${ev.nome}">${ev.nome}</div>`;
-    });
+    // Events: hidden in Canais view
+    if (viewMode !== 'canais') {
+      dayEventos.forEach(ev => {
+        const startMin = timeToMinutes(ev.hora_inicio) || WEEK_START_H * 60;
+        const endMin   = timeToMinutes(ev.hora_fim)   || (WEEK_START_H + 1) * 60;
+        const top      = (startMin - WEEK_START_H * 60) * (HOUR_PX / 60);
+        const height   = Math.max((endMin - startMin) * (HOUR_PX / 60), 24);
+        html += `<div class="week-event chip-evento" style="top:${top}px;height:${height}px" title="${ev.nome}">${ev.nome}</div>`;
+      });
+    }
 
     html += `</div></div>`;
   }
@@ -273,7 +284,8 @@ function renderDay(container, calData, viewMode, dayOffset) {
 
   let workers = [];
   if (!isSpecial) {
-    workers = funcionarios.filter(f => !absentNames.includes(f.nome));
+    const base = funcionarios.filter(f => !absentNames.includes(f.nome));
+    workers = viewMode === 'canais' ? base.filter(f => f.canal !== 'Gestão') : base;
   } else {
     dayEscala.forEach(e => {
       const f = funcionarios.find(fn => fn.id === e.funcionario_id || fn.nome === e.funcionario_nome);
@@ -319,16 +331,20 @@ function renderDay(container, calData, viewMode, dayOffset) {
   });
 
   dayAusencias.forEach(a => {
-    html += `<div class="week-event chip-ausencia" style="top:0;height:100%;opacity:.35;border-radius:0" title="${a.nome} — ${a.tipo_solicitacao}"></div>`;
+    const func = funcionarios.find(f => f.nome === a.nome);
+    const acls = (func && func.canal === 'Gestão') ? 'chip-gestao' : 'chip-ausencia';
+    html += `<div class="week-event ${acls}" style="top:0;height:100%;opacity:.35;border-radius:0" title="${a.nome} — ${a.tipo_solicitacao}"></div>`;
   });
 
-  dayEventos.forEach(ev => {
-    const startMin = timeToMinutes(ev.hora_inicio) || WEEK_START_H * 60;
-    const endMin   = timeToMinutes(ev.hora_fim)   || (WEEK_START_H + 1) * 60;
-    const top      = (startMin - WEEK_START_H * 60) * (HOUR_PX / 60);
-    const height   = Math.max((endMin - startMin) * (HOUR_PX / 60), 24);
-    html += `<div class="week-event chip-evento" style="top:${top}px;height:${height}px">${ev.nome}</div>`;
-  });
+  if (viewMode !== 'canais') {
+    dayEventos.forEach(ev => {
+      const startMin = timeToMinutes(ev.hora_inicio) || WEEK_START_H * 60;
+      const endMin   = timeToMinutes(ev.hora_fim)   || (WEEK_START_H + 1) * 60;
+      const top      = (startMin - WEEK_START_H * 60) * (HOUR_PX / 60);
+      const height   = Math.max((endMin - startMin) * (HOUR_PX / 60), 24);
+      html += `<div class="week-event chip-evento" style="top:${top}px;height:${height}px">${ev.nome}</div>`;
+    });
+  }
 
   html += `</div></div></div></div></div>`;
   container.innerHTML = html;
