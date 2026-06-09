@@ -37,6 +37,14 @@ function isFeriado(dateStr, feriados) {
   return feriados.some(f => String(f.data).substring(0, 10) === dateStr);
 }
 
+// Extracts HH:MM from an ISO datetime string like "2026-06-08T09:00"
+function getTime(isoStr) {
+  if (!isoStr) return '';
+  const s = String(isoStr);
+  const ti = s.indexOf('T');
+  return ti >= 0 ? s.substring(ti + 1, ti + 6) : '';
+}
+
 // Returns set of funcionario ids/nomes that work in reduced schedule on a given weekday.
 // Rule: Saturday escala → Mon-Fri of same week are reduced.
 //       Sunday  escala → Mon-Fri of the following week are reduced.
@@ -112,14 +120,14 @@ function renderMonth(container, calData, viewMode) {
           chips.push(`<div class="${getChipClass(canal)}" title="${e.funcionario_nome} (${e.tipo})">${e.funcionario_nome}</div>`);
         });
       }
-      // Absences: gestão employees shown in purple
+      // Absences: gestão employees shown in purple; show time when same-day
       dayAusencias.forEach(a => {
         const func = funcionarios.find(f => f.nome === a.nome);
         const acls = (func && func.canal === 'Gestão') ? 'chip-gestao' : 'chip-ausencia';
-        const label = a.data_inicio === a.data_fim || String(a.data_inicio).substring(0, 10) === String(a.data_fim).substring(0, 10)
-          ? a.nome
-          : `${a.nome} (${a.tipo_solicitacao})`;
-        chips.push(`<div class="chip ${acls}" title="${a.nome} — ${a.tipo_solicitacao}">${label}</div>`);
+        const t1 = getTime(a.data_inicio), t2 = getTime(a.data_fim);
+        const sameDay = String(a.data_inicio).substring(0, 10) === String(a.data_fim).substring(0, 10);
+        const timeStr = (t1 && t2 && sameDay) ? ` ${t1}–${t2}` : '';
+        chips.push(`<div class="chip ${acls}" title="${a.nome} — ${a.tipo_solicitacao}">${a.nome}${timeStr}</div>`);
       });
     }
 
@@ -137,10 +145,11 @@ function renderMonth(container, calData, viewMode) {
       }
     }
 
-    // Events: hidden in Canais view
+    // Events: hidden in Canais view; show time when available
     if (viewMode !== 'canais') {
       dayEventos.forEach(ev => {
-        chips.push(`<div class="chip chip-evento" title="${ev.nome}">${ev.nome}</div>`);
+        const timeStr = ev.hora_inicio ? ` ${ev.hora_inicio}${ev.hora_fim ? '–'+ev.hora_fim : ''}` : '';
+        chips.push(`<div class="chip chip-evento" title="${ev.nome}${timeStr}">${ev.nome}${timeStr}</div>`);
       });
     }
 
@@ -224,13 +233,18 @@ function renderWeek(container, calData, viewMode, weekOffset) {
 
     let workers = [];
     if (!isSpecial) {
-      const base = funcionarios.filter(f => !absentNames.includes(f.nome));
-      workers = viewMode === 'canais' ? base.filter(f => f.canal !== 'Gestão') : base;
+      // Weekdays: schedule bars only in Canais/Ambos (Agenda shows no bars on weekdays)
+      if (viewMode === 'canais' || viewMode === 'ambos') {
+        workers = funcionarios.filter(f => !absentNames.includes(f.nome) && f.canal !== 'Gestão');
+      }
     } else {
-      dayEscala.forEach(e => {
-        const f = funcionarios.find(fn => fn.id === e.funcionario_id || fn.nome === e.funcionario_nome);
-        if (f) workers.push({ ...f, reduced: true });
-      });
+      // Weekend/holiday: escala workers only in Agenda/Ambos (not in Canais)
+      if (viewMode !== 'canais') {
+        dayEscala.forEach(e => {
+          const f = funcionarios.find(fn => fn.id === e.funcionario_id || fn.nome === e.funcionario_nome);
+          if (f) workers.push({ ...f });
+        });
+      }
     }
 
     html += `<div class="week-day-col">
@@ -321,13 +335,16 @@ function renderDay(container, calData, viewMode, dayOffset) {
 
   let workers = [];
   if (!isSpecial) {
-    const base = funcionarios.filter(f => !absentNames.includes(f.nome));
-    workers = viewMode === 'canais' ? base.filter(f => f.canal !== 'Gestão') : base;
+    if (viewMode === 'canais' || viewMode === 'ambos') {
+      workers = funcionarios.filter(f => !absentNames.includes(f.nome) && f.canal !== 'Gestão');
+    }
   } else {
-    dayEscala.forEach(e => {
-      const f = funcionarios.find(fn => fn.id === e.funcionario_id || fn.nome === e.funcionario_nome);
-      if (f) workers.push({ ...f, reduced: true });
-    });
+    if (viewMode !== 'canais') {
+      dayEscala.forEach(e => {
+        const f = funcionarios.find(fn => fn.id === e.funcionario_id || fn.nome === e.funcionario_nome);
+        if (f) workers.push({ ...f });
+      });
+    }
   }
 
   const isToday = dateStr === toDateStr(today);

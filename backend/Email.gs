@@ -84,7 +84,7 @@ function sendRequestEmail(reqData, token) {
 <div class="ft"><p>Gerado automaticamente pelo sistema Mordomia Zarpo.</p></div>
 </div></div></body></html>`;
 
-  GmailApp.sendEmail(GESTAO_EMAIL, subject, plainBody, {
+  MailApp.sendEmail(GESTAO_EMAIL, subject, plainBody, {
     htmlBody: htmlBody,
     replyTo: reqData.email,
     name: 'Mordomia Zarpo'
@@ -142,7 +142,7 @@ function sendNotificationEmail(ausencia, status) {
 <div class="ft"><p>Gerado automaticamente pelo sistema Mordomia Zarpo.</p></div>
 </div></div></body></html>`;
 
-  GmailApp.sendEmail(ausencia.email, subject, plain, {
+  MailApp.sendEmail(ausencia.email, subject, plain, {
     htmlBody: html,
     name: 'Mordomia Zarpo'
   });

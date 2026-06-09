@@ -23,7 +23,11 @@ function submitRequest(data) {
     now
   ]);
 
-  sendRequestEmail(data, token);
+  try {
+    sendRequestEmail(data, token);
+  } catch(e) {
+    Logger.log('Email error: ' + e.message);
+  }
   return { success: true, message: 'Pedido enviado com sucesso! Você receberá um email com o resultado.' };
 }
 
