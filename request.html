@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mordomia Zarpo — Solicitar Ausência</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand">Mordomia <span class="logo-dot">●</span> Zarpo</a>
+  <div class="navbar-nav">
+    <a href="index.html">Calendário</a>
+    <a href="request.html" class="active">Solicitar Ausência</a>
+  </div>
+  <div class="navbar-right">
+    <a href="admin.html" class="btn-sm btn-ghost">Admin</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="form-card">
+    <div class="card">
+      <div class="form-title">Solicitar Ausência</div>
+      <div class="form-sub">Preencha o formulário abaixo. Sua solicitação será enviada para a gestão e você receberá um email com o resultado.</div>
+
+      <div id="form-alert" class="alert" style="display:none"></div>
+
+      <form id="request-form" novalidate>
+
+        <div class="form-group">
+          <label class="form-label" for="nome">Nome completo <span class="req">*</span></label>
+          <select class="form-control" id="nome" name="nome">
+            <option value="">Carregando...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email Zarpo <span class="req">*</span></label>
+          <input class="form-control" type="email" id="email" name="email" placeholder="seu.nome@zarpo.com.br">
+          <div class="form-hint">Você receberá o resultado por este email.</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="tipo_solicitacao">Tipo de solicitação <span class="req">*</span></label>
+          <select class="form-control" id="tipo_solicitacao" name="tipo_solicitacao">
+            <option value="">Selecione...</option>
+            <option>Folga</option>
+            <option>Ausência de horas</option>
+            <option>Férias</option>
+          </select>
+          <div class="form-hint" id="ferias-hint" style="display:none">
+            ⚠️ Em caso de férias, preencha um formulário por período.
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="data_inicio">Data e hora início <span class="req">*</span></label>
+            <input class="form-control" type="datetime-local" id="data_inicio" name="data_inicio">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="data_fim">Data e hora fim <span class="req">*</span></label>
+            <input class="form-control" type="datetime-local" id="data_fim" name="data_fim">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="motivo">Motivo <span class="req">*</span></label>
+          <select class="form-control" id="motivo" name="motivo">
+            <option value="">Carregando...</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="outros-wrap" style="display:none">
+          <label class="form-label" for="motivo_outro">Descreva o motivo <span class="req">*</span></label>
+          <input class="form-control" type="text" id="motivo_outro" name="motivo_outro" placeholder="Descreva brevemente">
+        </div>
+
+        <button type="submit" class="btn-sm btn-primary btn-full" id="submit-btn">
+          Enviar Pedido
+        </button>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/request.js"></script>
+<script>
+  document.getElementById('tipo_solicitacao').addEventListener('change', function() {
+    document.getElementById('ferias-hint').style.display = this.value === 'Férias' ? 'block' : 'none';
+  });
+</script>
+</body>
+</html>

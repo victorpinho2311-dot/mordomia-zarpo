@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mordomia Zarpo — Calendário</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand">Mordomia <span class="logo-dot">●</span> Zarpo</a>
+  <div class="navbar-nav">
+    <a href="index.html" class="active">Calendário</a>
+    <a href="request.html">Solicitar Ausência</a>
+  </div>
+  <div class="navbar-right">
+    <a href="admin.html" class="btn-sm btn-ghost">Admin</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--chat)"></div>Chat</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--pos)"></div>Telefone/pós</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--pre)"></div>Telefone/pré</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--ausencia)"></div>Ausências</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--evento)"></div>Eventos</div>
+  </div>
+
+  <!-- Controls -->
+  <div class="cal-controls">
+    <div class="cal-nav">
+      <button id="btn-prev" title="Anterior">‹</button>
+      <div class="cal-title" id="cal-title">—</div>
+      <button id="btn-next" title="Próximo">›</button>
+    </div>
+    <button class="btn-sm btn-ghost" id="btn-today">Hoje</button>
+
+    <div class="spacer"></div>
+
+    <div class="toggle-group" id="view-mode-group">
+      <button class="active" data-mode="escala">Escala</button>
+      <button data-mode="canais">Canais</button>
+      <button data-mode="ambos">Ambos</button>
+    </div>
+
+    <div class="toggle-group" id="period-group">
+      <button class="active" data-period="mes">Mês</button>
+      <button data-period="semana">Semana</button>
+      <button data-period="dia">Dia</button>
+    </div>
+  </div>
+
+  <!-- Calendar container -->
+  <div id="calendar-container">
+    <div class="loader"><div class="spinner"></div></div>
+  </div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/calendar.js"></script>
+<script>
+  let currentMes = new Date().getMonth() + 1;
+  let currentAno = new Date().getFullYear();
+  let viewMode   = 'escala';
+  let period     = 'mes';
+  let offset     = 0;
+  let calData    = null;
+
+  const MONTHS_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  async function loadCalendar() {
+    const container = document.getElementById('calendar-container');
+    container.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+    try {
+      const res = await API.getCalendarData(currentMes, currentAno);
+      if (!res.success) { container.innerHTML = `<div class="alert alert-error">${res.error}</div>`; return; }
+      calData = res.data;
+      renderCalendar(container);
+      updateTitle();
+    } catch (e) {
+      container.innerHTML = '<div class="alert alert-error">Erro ao carregar dados. Verifique a URL do script em js/config.js.</div>';
+    }
+  }
+
+  function renderCalendar(container) {
+    if (!calData) return;
+    if (period === 'mes')    renderMonth(container, calData, viewMode);
+    else if (period === 'semana') renderWeek(container, calData, viewMode, offset);
+    else if (period === 'dia')    renderDay(container, calData, viewMode, offset);
+  }
+
+  function updateTitle() {
+    const el = document.getElementById('cal-title');
+    if (period === 'mes') {
+      el.textContent = `${MONTHS_FULL[currentMes - 1]} ${currentAno}`;
+    } else if (period === 'semana') {
+      const firstOfMonth = new Date(currentAno, currentMes - 1, 1);
+      const start = new Date(firstOfMonth);
+      start.setDate(firstOfMonth.getDate() - firstOfMonth.getDay() + offset * 7);
+      const end = new Date(start); end.setDate(start.getDate() + 6);
+      el.textContent = `${start.getDate()}/${start.getMonth()+1} – ${end.getDate()}/${end.getMonth()+1}`;
+    } else {
+      const base = new Date(currentAno, currentMes - 1, 1);
+      base.setDate(base.getDate() + offset);
+      el.textContent = `${base.getDate()} de ${MONTHS_FULL[base.getMonth()]} ${base.getFullYear()}`;
+    }
+  }
+
+  // Nav buttons
+  document.getElementById('btn-prev').addEventListener('click', () => {
+    if (period === 'mes') {
+      currentMes--; if (currentMes < 1) { currentMes = 12; currentAno--; }
+      offset = 0; loadCalendar();
+    } else {
+      offset--; renderCalendar(document.getElementById('calendar-container')); updateTitle();
+    }
+  });
+  document.getElementById('btn-next').addEventListener('click', () => {
+    if (period === 'mes') {
+      currentMes++; if (currentMes > 12) { currentMes = 1; currentAno++; }
+      offset = 0; loadCalendar();
+    } else {
+      offset++; renderCalendar(document.getElementById('calendar-container')); updateTitle();
+    }
+  });
+  document.getElementById('btn-today').addEventListener('click', () => {
+    const now = new Date();
+    currentMes = now.getMonth() + 1; currentAno = now.getFullYear(); offset = 0;
+    loadCalendar();
+  });
+
+  // View mode toggle
+  document.getElementById('view-mode-group').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-mode]');
+    if (!btn) return;
+    viewMode = btn.dataset.mode;
+    document.querySelectorAll('#view-mode-group button').forEach(b => b.classList.toggle('active', b === btn));
+    renderCalendar(document.getElementById('calendar-container'));
+  });
+
+  // Period toggle
+  document.getElementById('period-group').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-period]');
+    if (!btn) return;
+    period = btn.dataset.period; offset = 0;
+    document.querySelectorAll('#period-group button').forEach(b => b.classList.toggle('active', b === btn));
+    renderCalendar(document.getElementById('calendar-container'));
+    updateTitle();
+  });
+
+  loadCalendar();
+</script>
+</body>
+</html>
